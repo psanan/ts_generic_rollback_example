@@ -47,9 +47,8 @@ PetscErrorCode TSRollBack_Generic(TS ts)
   PetscFunctionReturn(0);
 }
 
-/* NEW: prestep function to save state. This could be
-   part of the TS implemenation itself. Note there is
-   other logic in TSRollBack */
+/* NEW: prestep function to save state. With a flag check,
+   this could be included in the TS implementation */
 PetscErrorCode PreStep_RollBackGeneric(TS ts)
 {
   PetscErrorCode ierr;
@@ -68,7 +67,7 @@ PetscErrorCode PreStep_RollBackGeneric(TS ts)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode PostStep_RollBackGeneric(TS ts)
+PetscErrorCode PostStep_User(TS ts)
 {
   PetscErrorCode ierr;
 
@@ -233,16 +232,17 @@ int main(int argc,char **argv)
   /* NEW: create and compose extra data for Generic RollBack,
       and add generic implementation for rollback (refuse to do it
      if there's already a function there, for fear of breaking something)
-      Also refuse to do this if the TS is not already set up.
-     */
-  // TODO control with -ts_activate_generic_rollback or the like
+      Also refuse to do this if the TS is not already set up.  */
   ierr = TSSetSolution(ts,u);CHKERRQ(ierr); /* required for TSSetUp() */
   ierr = TSSetUp(ts);CHKERRQ(ierr);
   ierr = TSRollBackGenericActivate(ts);CHKERRQ(ierr);
 
-  /* TODO set a prestep call to roll back and then quit*/
+  /* NEW: add prestep logic to keep previous state up-to-date */
   ierr = TSSetPreStep(ts,PreStep_RollBackGeneric);CHKERRQ(ierr);
-  ierr = TSSetPostStep(ts,PostStep_RollBackGeneric);CHKERRQ(ierr);
+  
+  /* NEW: add poststep function to rollback and stop based on
+    some criterion */
+  ierr = TSSetPostStep(ts,PostStep_User);CHKERRQ(ierr);
 
   /*
      Run the timestepping solver
@@ -262,9 +262,6 @@ int main(int argc,char **argv)
      Free work space.  All PETSc objects should be destroyed when they
      are no longer needed.
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-
-  /* NEW: Destroy any data for Generic RollBack (could go into TSDestroy) */
-  //ierr = TSRollBackGenericDestroy(ts);CHKERRQ(ierr);
 
   ierr = TSDestroy(&ts);CHKERRQ(ierr);
   ierr = MatDestroy(&A);CHKERRQ(ierr);
