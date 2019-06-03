@@ -1,0 +1,10 @@
+runme
+*.o
+*.d
+
+# OS X
+.DS_Store
+*.dSYM
+
+# Vim
+.*.sw[omp]
