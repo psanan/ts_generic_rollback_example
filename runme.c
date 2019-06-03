@@ -97,6 +97,21 @@ PetscErrorCode TSRollBackGenericActivate(TS ts)
   PetscFunctionReturn(0);
 }
 
+/* NEW: destroy rollback state data */
+PetscErrorCode TSRollBackGenericDestroy(TS ts)
+{
+  PetscErrorCode ierr;
+  PetscContainer container;
+  void           *ptr; /* think of as Vec ptr */
+
+  ierr = PetscObjectQuery((PetscObject)ts,"RollBackGenericData",(PetscObject*)(&container));CHKERRQ(ierr);
+  ierr = PetscContainerGetPointer(container,&ptr);CHKERRQ(ierr);
+  if (ptr) {
+    ierr = VecDestroy((Vec*)(&ptr));CHKERRQ(ierr);
+  }
+  PetscFunctionReturn(0);
+}
+
 int main(int argc,char **argv)
 {
   AppCtx         appctx;                 /* user-defined application context */
@@ -263,6 +278,8 @@ int main(int argc,char **argv)
      are no longer needed.
      - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
+  /* NEW: free auxiliary data (could be integrated into TSDestroy with a flag check)*/
+  ierr = TSRollBackGenericDestroy(ts);CHKERRQ(ierr);
   ierr = TSDestroy(&ts);CHKERRQ(ierr);
   ierr = MatDestroy(&A);CHKERRQ(ierr);
   ierr = VecDestroy(&u);CHKERRQ(ierr);
