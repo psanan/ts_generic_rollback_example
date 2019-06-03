@@ -34,15 +34,11 @@ extern PetscErrorCode ExactSolution(PetscReal,Vec,AppCtx*);
 PetscErrorCode TSRollBack_Generic(TS ts)
 {
   PetscErrorCode ierr;
-  PetscContainer container;
-  void           *ptr; /* think of as Vec ptr */
   Vec            Xprev;
 
   PetscFunctionBegin;
-  ierr = PetscObjectQuery((PetscObject)ts,"RollBackGenericData",(PetscObject*)(&container));CHKERRQ(ierr);
-  ierr = PetscContainerGetPointer(container,&ptr);CHKERRQ(ierr);
-  if (!ptr) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_ARG_WRONGSTATE,"Rollback data not stored before TSRollBack() called (no steps taken?)");
-  Xprev = (Vec) ptr;
+  ierr = PetscObjectQuery((PetscObject)ts,"RollBackGeneric_Xprev",(PetscObject*)(&Xprev));CHKERRQ(ierr);
+  if (!Xprev) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_ARG_WRONGSTATE,"Rollback data not stored before TSRollBack() called (no steps taken?)");
   ierr = VecCopy(Xprev,ts->vec_sol);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -52,17 +48,13 @@ PetscErrorCode TSRollBack_Generic(TS ts)
 PetscErrorCode PreStep_RollBackGeneric(TS ts)
 {
   PetscErrorCode ierr;
-  PetscContainer container;
-  void           *ptr; /* think of as Vec ptr */
   Vec            Xprev;
 
-  ierr = PetscObjectQuery((PetscObject)ts,"RollBackGenericData",(PetscObject*)(&container));CHKERRQ(ierr);
-  ierr = PetscContainerGetPointer(container,&ptr);CHKERRQ(ierr);
-  if (!ptr) {
-    ierr = VecDuplicate(ts->vec_sol,(Vec*)(&ptr));CHKERRQ(ierr);
-    ierr = PetscContainerSetPointer(container,ptr);CHKERRQ(ierr);
+  ierr = PetscObjectQuery((PetscObject)ts,"RollBackGeneric_Xprev",(PetscObject*)(&Xprev));CHKERRQ(ierr);
+  if (!Xprev) {
+    ierr = VecDuplicate(ts->vec_sol,&Xprev);CHKERRQ(ierr);
+    ierr = PetscObjectCompose((PetscObject)ts,"RollBackGeneric_Xprev",(PetscObject)Xprev);CHKERRQ(ierr);
   }
-  Xprev = (Vec) ptr;
   ierr = VecCopy(ts->vec_sol,Xprev);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
@@ -84,13 +76,11 @@ PetscErrorCode PostStep_User(TS ts)
 PetscErrorCode TSRollBackGenericActivate(TS ts)
 {
   PetscErrorCode ierr;
-  PetscContainer container;
+  Vec            Xprev;
 
   PetscFunctionBegin;
-  ierr = PetscContainerCreate(PetscObjectComm((PetscObject)ts),&container);CHKERRQ(ierr);
-  ierr = PetscContainerSetPointer(container,NULL);CHKERRQ(ierr);
-  ierr = PetscObjectCompose((PetscObject)ts,"RollBackGenericData",(PetscObject)container);CHKERRQ(ierr);
-  ierr = PetscContainerDestroy(&container);CHKERRQ(ierr);
+  Xprev = NULL;
+  ierr = PetscObjectCompose((PetscObject)ts,"RollBackGeneric_Xprev",(PetscObject)Xprev);CHKERRQ(ierr);
   if (ts->ops->rollback) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_ARG_WRONGSTATE,"Cannot activate generic rollback for a TS implementation that already implements TSRollBack()");
   ts->ops->rollback = TSRollBack_Generic;
   if (!ts->setupcalled) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_ARG_WRONGSTATE,"Cannot activate generic rollback before calling TSSetUp()");
@@ -101,13 +91,12 @@ PetscErrorCode TSRollBackGenericActivate(TS ts)
 PetscErrorCode TSRollBackGenericDestroy(TS ts)
 {
   PetscErrorCode ierr;
-  PetscContainer container;
-  void           *ptr; /* think of as Vec ptr */
+  Vec            Xprev;
 
-  ierr = PetscObjectQuery((PetscObject)ts,"RollBackGenericData",(PetscObject*)(&container));CHKERRQ(ierr);
-  ierr = PetscContainerGetPointer(container,&ptr);CHKERRQ(ierr);
-  if (ptr) {
-    ierr = VecDestroy((Vec*)(&ptr));CHKERRQ(ierr);
+  ierr = PetscObjectQuery((PetscObject)ts,"RollBackGeneric_Xprev",(PetscObject*)(&Xprev));CHKERRQ(ierr);
+  if (Xprev) {
+    ierr = VecDestroy(&Xprev);CHKERRQ(ierr);
+    ierr = PetscObjectCompose((PetscObject)ts,"RollBackGeneric_Xprev",NULL);CHKERRQ(ierr);
   }
   PetscFunctionReturn(0);
 }
@@ -254,7 +243,7 @@ int main(int argc,char **argv)
 
   /* NEW: add prestep logic to keep previous state up-to-date */
   ierr = TSSetPreStep(ts,PreStep_RollBackGeneric);CHKERRQ(ierr);
-  
+
   /* NEW: add poststep function to rollback and stop based on
     some criterion */
   ierr = TSSetPostStep(ts,PostStep_User);CHKERRQ(ierr);
