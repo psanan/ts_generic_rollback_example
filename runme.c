@@ -10,7 +10,7 @@ Input parameters include:\n\
 #include <petscts.h>
 #include <petscdraw.h>
 
-/* NEW */
+/* NEW - allows invasive (non-API) operations in TSRollBackGenericActivate() */
 #include <petsc/private/tsimpl.h>
 
 typedef struct {
@@ -34,12 +34,13 @@ extern PetscErrorCode ExactSolution(PetscReal,Vec,AppCtx*);
 PetscErrorCode TSRollBack_Generic(TS ts)
 {
   PetscErrorCode ierr;
-  Vec            Xprev;
+  Vec            X,Xprev;
 
   PetscFunctionBegin;
   ierr = PetscObjectQuery((PetscObject)ts,"RollBackGeneric_Xprev",(PetscObject*)(&Xprev));CHKERRQ(ierr);
   if (!Xprev) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_ARG_WRONGSTATE,"Rollback data not stored before TSRollBack() called (no steps taken?)");
-  ierr = VecCopy(Xprev,ts->vec_sol);CHKERRQ(ierr);
+  ierr = TSGetSolution(ts,&X);CHKERRQ(ierr);
+  ierr = VecCopy(Xprev,X);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -48,14 +49,16 @@ PetscErrorCode TSRollBack_Generic(TS ts)
 PetscErrorCode PreStep_RollBackGeneric(TS ts)
 {
   PetscErrorCode ierr;
-  Vec            Xprev;
+  Vec            X,Xprev;
 
+  PetscFunctionBegin;
+  ierr = TSGetSolution(ts,&X);CHKERRQ(ierr);
   ierr = PetscObjectQuery((PetscObject)ts,"RollBackGeneric_Xprev",(PetscObject*)(&Xprev));CHKERRQ(ierr);
   if (!Xprev) {
-    ierr = VecDuplicate(ts->vec_sol,&Xprev);CHKERRQ(ierr);
+    ierr = VecDuplicate(X,&Xprev);CHKERRQ(ierr);
     ierr = PetscObjectCompose((PetscObject)ts,"RollBackGeneric_Xprev",(PetscObject)Xprev);CHKERRQ(ierr);
   }
-  ierr = VecCopy(ts->vec_sol,Xprev);CHKERRQ(ierr);
+  ierr = VecCopy(X,Xprev);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
