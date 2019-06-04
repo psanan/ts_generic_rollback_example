@@ -62,15 +62,10 @@ PetscErrorCode PreStep_RollBackGeneric(TS ts)
 /* NEW: activate new impl */
 PetscErrorCode TSRollBackGenericActivate(TS ts)
 {
-  PetscErrorCode ierr;
-  Vec            Xprev;
-
   PetscFunctionBegin;
-  Xprev = NULL;
-  ierr = PetscObjectCompose((PetscObject)ts,"RollBackGeneric_Xprev",(PetscObject)Xprev);CHKERRQ(ierr);
-  if (ts->ops->rollback) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_ARG_WRONGSTATE,"Cannot activate generic rollback for a TS implementation that already implements TSRollBack()");
-  ts->ops->rollback = TSRollBack_Generic;
   if (!ts->setupcalled) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_ARG_WRONGSTATE,"Cannot activate generic rollback before calling TSSetUp()");
+  if (ts->ops->rollback) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_ARG_WRONGSTATE,"Refusing to activate generic rollback for a TS implementation that already implements TSRollBack()");
+  ts->ops->rollback = TSRollBack_Generic;
   PetscFunctionReturn(0);
 }
 
