@@ -7,7 +7,7 @@ Input parameters include:\n\
 #include <petscts.h>
 #include <petscdraw.h>
 
-/* NEW - allows invasive (non-API) operations in TSRollBackGenericActivate() */
+/* NEW: - allows invasive (non-API) operations in TSRollBackGenericActivate() */
 #include <petsc/private/tsimpl.h>
 
 typedef struct {
