@@ -1,6 +1,7 @@
 /* Modified from PETSc TS tutorial ex3 - see there for more options/analysis/comments on this system */
 /* See things marked NEW: */
-static char help[] ="Solves a simple time-dependent linear PDE (the heat equation).\n\
+static char help[] = "Demonstrate generic TSRollBack() implementation.\n\
+Solves a simple time-dependent linear PDE (the heat equation).\n\
 Input parameters include:\n\
   -m <points>, where <points> = number of grid points\n\n";
 
