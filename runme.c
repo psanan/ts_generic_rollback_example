@@ -92,9 +92,11 @@ PetscErrorCode TSRollBackGenericDestroy(TS ts)
 PetscErrorCode PostStep_User(TS ts)
 {
   PetscErrorCode ierr;
+  PetscInt       stepNumber;
 
   PetscFunctionBegin;
-  if (ts->steps > 4) {
+  ierr = TSGetStepNumber(ts,&stepNumber);CHKERRQ(ierr);
+  if (stepNumber > 4) {
     ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"Custom PostStep - rolling back and stopping after 4 steps.\n");
     ierr = TSRollBack(ts);CHKERRQ(ierr);
     ierr = TSSetConvergedReason(ts,TS_CONVERGED_USER);CHKERRQ(ierr);
