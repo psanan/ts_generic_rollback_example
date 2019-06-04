@@ -11,10 +11,9 @@ Input parameters include:\n\
 #include <petsc/private/tsimpl.h>
 
 typedef struct {
-  PetscInt    m;                 /* total number of grid points */
-  PetscReal   h;                 /* mesh width h = 1/(m-1) */
-  Mat         A;                 /* RHS mat, used with IFunction interface */
-  PetscReal   oshift;            /* old shift applied, prevent to recompute the IJacobian */
+  PetscInt    m;
+  PetscReal   h;
+  Mat         A;
 } AppCtx;
 
 extern PetscErrorCode InitialConditions(Vec,AppCtx*);
@@ -92,15 +91,14 @@ PetscErrorCode PostStep_User(TS ts)
   PetscFunctionReturn(0);
 }
 
-
 int main(int argc,char **argv)
 {
-  AppCtx         appctx;                 /* user-defined application context */
-  TS             ts;                     /* timestepping context */
-  Mat            A;                      /* matrix data structure */
-  Vec            u;                      /* approximate solution vector */
-  PetscReal      time_total_max = 100.0; /* default max total time */
-  PetscInt       time_steps_max = 100;   /* default max timesteps */
+  AppCtx         appctx;
+  TS             ts;
+  Mat            A;
+  Vec            u;
+  PetscReal      time_total_max = 100.0;
+  PetscInt       time_steps_max = 100;
   PetscErrorCode ierr;
   PetscInt       m;
   PetscMPIInt    size;
@@ -149,8 +147,7 @@ int main(int argc,char **argv)
   /* NEW: add prestep logic to keep previous state up-to-date */
   ierr = TSSetPreStep(ts,PreStep_RollBackGeneric);CHKERRQ(ierr);
 
-  /* NEW: add poststep function to rollback and stop based on
-    some criterion */
+  /* NEW: add poststep function to rollback and stop based on some criterion */
   ierr = TSSetPostStep(ts,PostStep_User);CHKERRQ(ierr);
 
   ierr = TSSolve(ts,NULL);CHKERRQ(ierr);
