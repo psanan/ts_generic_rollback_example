@@ -139,7 +139,7 @@ int main(int argc,char **argv)
 
   ierr = InitialConditions(u,&appctx);CHKERRQ(ierr);
 
-  /* NEW: add generic implementation for rollback (refuse to do it */
+  /* NEW: add generic implementation for rollback */
   ierr = TSSetSolution(ts,u);CHKERRQ(ierr); /* required for TSSetUp() */
   ierr = TSSetUp(ts);CHKERRQ(ierr);
   ierr = TSRollBackGenericActivate(ts);CHKERRQ(ierr);
