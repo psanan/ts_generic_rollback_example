@@ -59,19 +59,6 @@ PetscErrorCode PreStep_RollBackGeneric(TS ts)
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode PostStep_User(TS ts)
-{
-  PetscErrorCode ierr;
-
-  PetscFunctionBegin;
-  if (ts->steps > 4) {
-    ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"Custom PostStep - rolling back and stopping after 4 steps.\n");
-    ierr = TSRollBack(ts);CHKERRQ(ierr);
-    ierr = TSSetConvergedReason(ts,TS_CONVERGED_USER);CHKERRQ(ierr);
-  }
-  PetscFunctionReturn(0);
-}
-
 /* NEW: activate new impl */
 PetscErrorCode TSRollBackGenericActivate(TS ts)
 {
@@ -101,6 +88,21 @@ PetscErrorCode TSRollBackGenericDestroy(TS ts)
   PetscFunctionReturn(0);
 }
 
+/* NEW: example of user post-step hook to roll back and stop */
+PetscErrorCode PostStep_User(TS ts)
+{
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  if (ts->steps > 4) {
+    ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"Custom PostStep - rolling back and stopping after 4 steps.\n");
+    ierr = TSRollBack(ts);CHKERRQ(ierr);
+    ierr = TSSetConvergedReason(ts,TS_CONVERGED_USER);CHKERRQ(ierr);
+  }
+  PetscFunctionReturn(0);
+}
+
+
 int main(int argc,char **argv)
 {
   AppCtx         appctx;                 /* user-defined application context */
@@ -110,7 +112,7 @@ int main(int argc,char **argv)
   PetscReal      time_total_max = 100.0; /* default max total time */
   PetscInt       time_steps_max = 100;   /* default max timesteps */
   PetscErrorCode ierr;
-  PetscInt       steps,m;
+  PetscInt       m;
   PetscMPIInt    size;
   PetscReal      dt;
   PetscBool      flg;
@@ -252,15 +254,6 @@ int main(int argc,char **argv)
      Run the timestepping solver
   */
   ierr = TSSolve(ts,NULL);CHKERRQ(ierr);
-
-  ierr = TSGetStepNumber(ts,&steps);CHKERRQ(ierr);
-
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-     View timestepping solver info
-     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-
-  ierr = PetscPrintf(PETSC_COMM_SELF,"avg. error (2 norm) = %g, avg. error (max norm) = %g\n",(double)(appctx.norm_2/steps),(double)(appctx.norm_max/steps));CHKERRQ(ierr);
-  ierr = TSView(ts,PETSC_VIEWER_STDOUT_SELF);CHKERRQ(ierr);
 
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      Free work space.  All PETSc objects should be destroyed when they
