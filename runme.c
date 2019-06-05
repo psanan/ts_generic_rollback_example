@@ -54,7 +54,7 @@ PetscErrorCode PreStep_RollBackGeneric(TS ts)
 }
 
 /* NEW: activate new impl. Note that this uses the ts->prestep slot,
-        but could be integrated into the TS implementation with dedicated logic*/
+        but could be integrated into the TS implementation with dedicated logic */
 PetscErrorCode TSRollBackGenericActivate(TS ts)
 {
   PetscErrorCode ierr;
@@ -73,7 +73,7 @@ PetscErrorCode PostStep_User(TS ts)
   PetscErrorCode ierr;
   PetscInt       stepNumber;
 
-  PetscFunctionBegin;
+  PetscFunctionBeginUser;
   ierr = TSGetStepNumber(ts,&stepNumber);CHKERRQ(ierr);
   if (stepNumber > 4) {
     ierr = PetscPrintf(PetscObjectComm((PetscObject)ts),"Custom PostStep - rolling back and stopping after 4 steps.\n");
