@@ -53,13 +53,17 @@ PetscErrorCode PreStep_RollBackGeneric(TS ts)
   PetscFunctionReturn(0);
 }
 
-/* NEW: activate new impl */
+/* NEW: activate new impl. Note that this uses the ts->prestep slot,
+        but could be integrated into the TS implementation with dedicated logic*/
 PetscErrorCode TSRollBackGenericActivate(TS ts)
 {
+  PetscErrorCode ierr;
+
   PetscFunctionBegin;
   if (!ts->setupcalled) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_ARG_WRONGSTATE,"Cannot activate generic rollback before calling TSSetUp()");
   if (ts->ops->rollback) SETERRQ(PetscObjectComm((PetscObject)ts),PETSC_ERR_ARG_WRONGSTATE,"Refusing to activate generic rollback for a TS implementation that already implements TSRollBack()");
   ts->ops->rollback = TSRollBack_Generic;
+  ierr = TSSetPreStep(ts,PreStep_RollBackGeneric);CHKERRQ(ierr);
   PetscFunctionReturn(0);
 }
 
@@ -131,9 +135,6 @@ int main(int argc,char **argv)
   ierr = TSSetSolution(ts,u);CHKERRQ(ierr); /* required for TSSetUp() */
   ierr = TSSetUp(ts);CHKERRQ(ierr);
   ierr = TSRollBackGenericActivate(ts);CHKERRQ(ierr);
-
-  /* NEW: add prestep logic to keep previous state up-to-date */
-  ierr = TSSetPreStep(ts,PreStep_RollBackGeneric);CHKERRQ(ierr);
 
   /* NEW: add poststep function to rollback and stop based on some criterion */
   ierr = TSSetPostStep(ts,PostStep_User);CHKERRQ(ierr);
